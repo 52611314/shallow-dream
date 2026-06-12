@@ -1,17 +1,36 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-
-import httpx
 from app.core.config import DEEPSEEK_API_KEY
+# 先导入数据库相关
+from app.core.database import engine, Base
 
-class ChatRequest(BaseModel):
-    message: str
+# 再导入模型（确保 Base 已定义）
+from app.models import session, document
 
-class ChatResponse(BaseModel):
-    reply: str
+# 其他导入...
+from contextlib import asynccontextmanager
+from sentence_transformers import SentenceTransformer # type: ignore
+from app.core.database import search_documents
+from app.api import chat, documents  # 导入路由模块
+# 创建所有表（第一次运行时）
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-app=FastAPI(title="Shallow dream")
-
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 这里写启动时要做的事（相当于之前的 startup）
+    print("🚀 应用启动，初始化数据库...")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    # 这里写关闭时要做的事（相当于之前的 shutdown）
+    print("🛑 应用关闭，清理资源...")
+    # 如果将来有数据库连接池需要关闭，可以在这里做
+    await engine.dispose()
+app = FastAPI(title="Shallow dream", lifespan=lifespan)
+# 注册路由
+app.include_router(chat.router)
+app.include_router(documents.router)
 @app.get("/")
 def root():
     return {"message": "Hello from Shallow Dream"}
@@ -19,43 +38,4 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
-@app.post("/chat")
-async def chat(req: ChatRequest):
-    request_body = {
-        "model": "deepseek-v4-flash", 
-        "messages": [
-            {"role": "user", "content": req.message}
-        ],
-        "stream": False
-    }
-    
-    # 2. 使用 try...except 包裹可能出错的网络请求代码
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.deepseek.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json=request_body,
-                timeout=15.0 
-            )
-            # 处理响应（状态码非200的情况也在这里处理）
-            if response.status_code == 200:
-                data = response.json()
-                reply = data["choices"][0]["message"]["content"]
-                return ChatResponse(reply=reply)
-            else:
-                # 记录日志（后面可以加上），给用户一个通用提示
-                return ChatResponse(reply="抱歉，AI 服务暂时响应异常，请稍后再试。")
-    
-    # 4. 捕获网络错误（如超时、连接失败）
-    except httpx.TimeoutException:
-        return ChatResponse(reply="请求超时，AI 服务响应过慢，请稍后再试。")
-    except httpx.RequestError as e:
-        # 捕获其他网络请求错误（如DNS解析失败、连接拒绝等）
-        return ChatResponse(reply=f"网络请求失败: {str(e)}")
-    except Exception as e:
-        # 捕获任何其他意料之外的错误，防止程序崩溃
-        return ChatResponse(reply="服务器内部错误，请联系管理员。")
+
