@@ -1,11 +1,12 @@
 "use client";
 
-import { Button as NextUIButton } from "@nextui-org/react";
+import { Button as NextUIButton, type ButtonProps as NextUIButtonProps } from "@nextui-org/react";
 import { cn } from "@/lib/utils";
+import { ReactNode } from "react";
 
-interface ButtonProps extends React.ComponentProps<typeof NextUIButton> {
-  variant?: "solid" | "bordered" | "light" | "flat" | "faded" | "shadow" | "ghost";
-  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger";
+interface ButtonProps extends NextUIButtonProps {
+  children?: ReactNode;
+  className?: string;
 }
 
 export function Button({ className, children, ...props }: ButtonProps) {

@@ -1,10 +1,15 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   body {
-    @apply bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100;
+    background-color: var(--color-white);
+    color: var(--color-gray-900);
+  }
+  .dark body {
+    background-color: var(--color-gray-950);
+    color: var(--color-gray-100);
   }
 }
 
@@ -15,13 +20,26 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-gray-800;
+  background-color: var(--color-gray-100);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background-color: var(--color-gray-800);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  background-color: var(--color-gray-300);
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: var(--color-gray-600);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400 dark:bg-gray-500;
+  background-color: var(--color-gray-400);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-gray-500);
 }

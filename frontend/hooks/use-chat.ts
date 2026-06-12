@@ -2,9 +2,8 @@
 
 import { useCallback, useRef } from "react";
 import { useChatStore } from "@/stores/chat-store";
-import { ChatMessage } from "@/types/chat";
 
-// 流式聊天 Hook
+// 流式聊天 Hook（SSE 版本）
 export function useChat() {
   const {
     currentSessionId,
@@ -73,15 +72,36 @@ export function useChat() {
         }
 
         let accumulatedContent = "";
+        let buffer = ""; // 缓冲区，处理不完整的 SSE 行
 
+        // 解析 SSE 事件流
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-          // 假设后端直接返回文本流
-          accumulatedContent += chunk;
-          updateLastMessage(sessionId, accumulatedContent);
+          const text = decoder.decode(value, { stream: true });
+          buffer += text;
+
+          // 按行分割 SSE 数据
+          const lines = buffer.split("\n");
+          // 最后一部分可能是不完整的行，保留在缓冲区
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6); // 去掉 "data: " 前缀
+
+              if (data === "[DONE]") {
+                // 流结束标记，忽略
+                continue;
+              }
+
+              // 恢复转义的换行符
+              const decoded = data.replace(/\\n/g, "\n");
+              accumulatedContent += decoded;
+              updateLastMessage(sessionId, accumulatedContent);
+            }
+          }
         }
 
         setTyping(false);
@@ -114,8 +134,6 @@ export function useChat() {
 
   // 重新生成最后一条消息
   const regenerate = useCallback(() => {
-    // 简化版：获取当前会话的最后一条用户消息，重新发送
-    // 完整版需要从 store 中获取
     console.log("重新生成功能待实现");
   }, []);
 

@@ -17,8 +17,8 @@ export function MainLayout({ children, sidebar }: MainLayoutProps) {
       {/* 侧边栏 */}
       <aside
         className={cn(
-          "h-full transition-all duration-300 ease-in-out",
-          sidebarCollapsed ? "w-0 overflow-hidden" : "w-64"
+          "h-full transition-all duration-300 ease-in-out flex-shrink-0",
+          sidebarCollapsed ? "w-14" : "w-64"
         )}
       >
         {sidebar}

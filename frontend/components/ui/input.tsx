@@ -1,9 +1,11 @@
 "use client";
 
-import { Input as NextUIInput } from "@nextui-org/react";
+import { Input as NextUIInput, type InputProps as NextUIInputProps } from "@nextui-org/react";
 import { cn } from "@/lib/utils";
 
-interface InputProps extends React.ComponentProps<typeof NextUIInput> {}
+interface InputProps extends NextUIInputProps {
+  className?: string;
+}
 
 export function Input({ className, ...props }: InputProps) {
   return (
